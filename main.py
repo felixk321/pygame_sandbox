@@ -1,39 +1,33 @@
 import pygame
 from pygame.surface import Surface
 import pymunk
-from typing import Tuple, List
+from typing import Tuple, List, Type
 from random import randint
 from components.floor import Segment
 from utils import convert
 from components.catapult import Catapult
-pygame.init()
-
-display = pygame.display.set_mode((500,500))
-clock = pygame.time.Clock()
-h = display.get_height()
-
-bullets = []
+from scenes.abstract import BaseScene
+from scenes.catapult_scene import CatapultScene
 
 space = pymunk.Space()
 space.gravity = (0,-1000)
 
-
-
-
-
-catapult = Catapult(250,300,75,space)
-
-line = Segment((0,100),(500,100),5,space)
-
-
-
-
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            exit()
-        if event.type == pygame.KEYDOWN:
+class Game:
+    def __init__(self) -> None:
+        self.scene = None
+        pygame.init()
+        self.display = pygame.display.set_mode((500,500))
+        self.scene = None
+        self.clock = pygame.time.Clock()
+    def run(self) ->None:
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                self.scene.handle_event(event)
+            pk = pygame.key.get_pressed()
+            self.scene.handle_pressed_keys(pk)
 
             self.scene.update()
             
