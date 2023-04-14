@@ -35,53 +35,25 @@ while True:
             exit()
         if event.type == pygame.KEYDOWN:
 
-            if event.key == pygame.K_r:
-                catapult.reload()
+            self.scene.update()
             
 
-        
+            self.scene.render(self.display)
 
-        
-    pressed_keys = pygame.key.get_pressed()
-    if pressed_keys[pygame.K_LEFT]:
-        catapult.move_arm()
-    if pressed_keys[pygame.K_SPACE]:
-        catapult.shot()
-    if pressed_keys[pygame.K_d]:
-        catapult.move(-1)
-    if pressed_keys[pygame.K_a]:
-        catapult.move(1)
-    catapult.update_motor_rate()
+            pygame.display.update()
+            self.clock.tick(60)
 
-    
-    ammo = catapult.detach_ammo()
-    if ammo:
-        bullets.append(ammo)
-    
-    display.fill((255,255,255))
+    def load_scene(self, Scene:Type[BaseScene])->None:
+        self.scene = Scene()
 
-    
-        
+g = Game()
+g.load_scene(CatapultScene)
+g.run()
 
 
-    line.render(display)
-    catapult.render(display)
 
-    for b in bullets:
-        b.render(display)
 
-    
 
-    
-    
-    
-
-    
-    
-
-    pygame.display.update()
-    space.step(1/60)
-    clock.tick(60)
 
         
 
