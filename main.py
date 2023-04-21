@@ -8,9 +8,8 @@ from utils import convert
 from components.catapult import Catapult
 from scenes.abstract import BaseScene
 from scenes.catapult_scene import CatapultScene
+from scenes.tank_scene import TankScene
 
-space = pymunk.Space()
-space.gravity = (0,-1000)
 
 class Game:
     def __init__(self) -> None:
@@ -19,6 +18,7 @@ class Game:
         self.display = pygame.display.set_mode((500,500))
         self.scene = None
         self.clock = pygame.time.Clock()
+        
     def run(self) ->None:
         while True:
             for event in pygame.event.get():
@@ -41,8 +41,10 @@ class Game:
         self.scene = Scene()
 
 g = Game()
-g.load_scene(CatapultScene)
+g.load_scene(TankScene)
 g.run()
+
+
 
 
 
