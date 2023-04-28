@@ -60,7 +60,18 @@ class TankBase:
         draw.polygon(display,(30,65,50), points, 1)
 
 class Wheel(Ball):
-    pass
+    def __init__(self, *args, **kwargs) -> None:
+
+        super().__init__(*args, **kwargs)
+        self.image = image.load("./assets/wheel.png", "png")
+
+    def render(self, display: Surface)->None:
+        h = display.get_height()
+        rotated_img = transform.rotate(self.image , degrees(self.body.angle))
+        display.blit(rotated_img,
+                     convert(self.body.position - Vec2d(self.radius,-self.radius), h)
+                     )
+
 
 
 class Tank: 
@@ -75,20 +86,39 @@ class Tank:
 
     def create_wheels(self, space: Space) ->List[Wheel]:
         r = 9
-        wheel = Wheel(self.origin + Vec2d(38,-56)+Vec2d(r,-r), r, space)
-        tb_local = self.tb.body.world_to_local(wheel.body.position)  #TRY TO GET IMAGE TO MATCH BODY
-        wheel.shape.filter = self.cf
-        space.add(PivotJoint
-            (
-            wheel.body,
-            self.tb.body,
-            (0,0),
-            tb_local
 
-            )
+        wheel_coords = [
+            Vec2d(38,-54),
+            Vec2d(57,-54),
+            Vec2d(76,-54),
+            Vec2d(96,-54),
+            Vec2d(116,-54),
+            Vec2d(136,-54),
+            Vec2d(160,-54),
+            Vec2d(184, -42)
+        ]
+
+        result = []
+
+        for coord in wheel_coords:
+
+
+            wheel = Wheel(self.origin + coord +Vec2d(r,-r), r, space)
+            wheel.shape.filter = self.cf
+            tb_local = self.tb.body.world_to_local(wheel.body.position)  
+            wheel.shape.filter = self.cf
+            space.add(PivotJoint
+                (
+                wheel.body,
+                self.tb.body,
+                (0,0),
+                tb_local
+
+                )
                   
                   )
-        return [wheel, ]
+            result.append(wheel)
+        return result
         
 
 
@@ -100,6 +130,7 @@ class Tank:
             wheel.render(display)
 
         self.tb.render(display)
+        
 
 
         
