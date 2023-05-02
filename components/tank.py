@@ -1,4 +1,4 @@
-from pymunk import Vec2d,Body, Poly, Space, PivotJoint, ShapeFilter
+from pymunk import Vec2d,Body, Poly, Space, PivotJoint, ShapeFilter, SimpleMotor, GearJoint
 from pygame import Surface, draw, image, transform
 from utils import convert
 from components.ball import Ball
@@ -68,10 +68,20 @@ class Wheel(Ball):
     def render(self, display: Surface)->None:
         h = display.get_height()
         rotated_img = transform.rotate(self.image , degrees(self.body.angle))
-        display.blit(rotated_img,
-                     convert(self.body.position - Vec2d(self.radius,-self.radius), h)
-                     )
+        dest = rotated_img.get_rect(center = convert(self.body.position, h))
+        display.blit(rotated_img, dest)
+        
 
+class Rear_Wheel(Wheel):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args)
+
+        tb: TankBase = kwargs["tb"]
+        space: Space = self.body.space
+
+        self.image = image.load("./assets/rear_wheel.png", "png")
+        self.motor = SimpleMotor(self.body,tb.body, 1)
+        space.add(self.motor)
 
 
 class Tank: 
@@ -84,8 +94,15 @@ class Tank:
 
         self.wheels = self.create_wheels(space)
 
+        self.rw = self.create_rear_wheels(space)
+
+        for wheel in self.wheels:
+            space.add(GearJoint(self.rw.body,wheel.body,0, 1))
+
     def create_wheels(self, space: Space) ->List[Wheel]:
         r = 9
+
+    
 
         wheel_coords = [
             Vec2d(38,-54),
@@ -105,6 +122,7 @@ class Tank:
 
             wheel = Wheel(self.origin + coord +Vec2d(r,-r), r, space)
             wheel.shape.filter = self.cf
+            wheel.shape.friction = 1
             tb_local = self.tb.body.world_to_local(wheel.body.position)  
             wheel.shape.filter = self.cf
             space.add(PivotJoint
@@ -119,6 +137,23 @@ class Tank:
                   )
             result.append(wheel)
         return result
+    
+    def create_rear_wheels(self, space: Space)-> Rear_Wheel:
+        r = 9
+
+        coord = self.origin + Vec2d(14, -42) + Vec2d(r,-r)
+        
+        wheel = Rear_Wheel(coord, r, space, tb = self.tb)
+        wheel.shape.filter = self.cf
+
+        space.add(PivotJoint(wheel.body, self.tb.body, (0,0), self.tb.body.world_to_local(wheel.body.position) ))
+
+        return wheel
+
+    def move(self, direction: int)->None:
+        self.rw.motor.rate += -1 * direction
+
+    
         
 
 
@@ -130,6 +165,8 @@ class Tank:
             wheel.render(display)
 
         self.tb.render(display)
+        self.rw.render(display)
+        
         
 
 
