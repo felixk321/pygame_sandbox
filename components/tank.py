@@ -2,52 +2,39 @@ from pymunk import Vec2d,Body, Poly, Space, PivotJoint, ShapeFilter, SimpleMotor
 from pygame import Surface, draw, image, transform
 from utils import convert
 from components.ball import Ball
-from typing import List
+from typing import List, Tuple
 from math import degrees
 
-
-
-
-class TankBase:
-    def __init__(self, origin:Vec2d, space: Space)-> None:
+class PolyComponent:
+    def __init__(self, origin: Vec2d, center: Vec2d, space:Space, img_path: str, points: Tuple[Tuple[int,int]], filter: ShapeFilter)-> None:
+        self.origin = origin
         self.body = Body()
-        self.center = Vec2d(104, -22)
+        self.center = center
         self.body.position = origin + self.center
-       
 
-        points = (
-            Vec2d(0,0),
-            Vec2d(48,0),
-            Vec2d(73,6),
-            Vec2d(204,10),
-            Vec2d(200,28),
-            Vec2d(172,34),
-            Vec2d(38,33),
-            Vec2d(10,20),
-            Vec2d(0,20)
-        )
 
 
         self.shape = Poly(self.body,
                           [
-            convert(Vec2d(*p) - self.center, 44)
+            convert(Vec2d(*p) - self.center, abs(self.center.y *2))
             for p in points
 
             ])
-        
+        self.shape.filter = filter
         self.shape.density = 1
         space.add(self.body, self.shape)
 
-        self.image = image.load("./assets/tank_base.png", "png")
-
+        self.image = image.load(img_path)
     def render(self, display: Surface)->None:
+        
+
         h = display.get_height()
 
-        
+
         points = [
 
         convert(self.body.local_to_world(v), h)
-        
+
         for v in self.shape.get_vertices()
         ]
 
@@ -56,8 +43,6 @@ class TankBase:
         dest = rotate_image.get_rect(center = convert(self.body.position,h))
 
         display.blit(rotate_image,dest)
-
-        draw.polygon(display,(30,65,50), points, 1)
 
 class Wheel(Ball):
     def __init__(self, *args, **kwargs) -> None:
@@ -76,7 +61,7 @@ class Rear_Wheel(Wheel):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args)
 
-        tb: TankBase = kwargs["tb"]
+        tb: PolyComponent = kwargs["tb"]
         space: Space = self.body.space
 
         self.image = image.load("./assets/rear_wheel.png", "png")
@@ -89,8 +74,22 @@ class Tank:
         self.origin = origin
         self.cf = ShapeFilter(group = 1) #collision filter
 
-        self.tb = TankBase(origin + Vec2d(0,-30), space)
-        self.tb.shape.filter = self.cf
+
+        self.tb = PolyComponent(
+            origin = origin + Vec2d(0,-30),
+              center = Vec2d(104,-22),
+              space = space,
+              img_path = "./assets/tank_base.png",
+              points = (
+            Vec2d(0,0),
+            Vec2d(48,0),
+            Vec2d(73,6),
+            Vec2d(204,10),
+            Vec2d(200,28),
+            Vec2d(172,34),
+            Vec2d(38,33),
+            Vec2d(10,20),
+            Vec2d(0,20)), filter = self.cf )
 
         self.wheels = self.create_wheels(space)
 
