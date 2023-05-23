@@ -1,9 +1,9 @@
-from pymunk import Vec2d,Body, Poly, Space, PivotJoint, ShapeFilter, SimpleMotor, GearJoint, PinJoint
+from pymunk import Vec2d,Body, Poly, Space, PivotJoint, ShapeFilter, SimpleMotor, GearJoint, PinJoint, RotaryLimitJoint
 from pygame import Surface, draw, image, transform
 from utils import convert
 from components.ball import Ball
 from typing import List, Tuple
-from math import degrees
+from math import degrees, sin, cos
 
 class PolyComponent:
     def __init__(self, origin: Vec2d, center: Vec2d, space:Space, img_path: str, points: Tuple[Tuple[int,int]], filter: ShapeFilter)-> None:
@@ -25,6 +25,7 @@ class PolyComponent:
         space.add(self.body, self.shape)
 
         self.image = image.load(img_path)
+        
     def render(self, display: Surface)->None:
         
 
@@ -67,12 +68,15 @@ class Rear_Wheel(Wheel):
         self.image = image.load("./assets/rear_wheel.png", "png")
         self.motor = SimpleMotor(self.body,tb.body, 1)
         space.add(self.motor)
-
+class Ammo(Ball):
+    pass
 
 class Tank: 
     def __init__(self, origin : Vec2d, space: Space) -> None:
         self.origin = origin
         self.cf = ShapeFilter(group = 1) #collision filter
+        self.ammo_generated = False
+        self.space = space
 
 
         self.tb = PolyComponent(
@@ -119,14 +123,54 @@ class Tank:
                     self.tb.body.world_to_local(right_attachment),
                     self.turret.body.world_to_local(right_attachment)
                              ))
+        self.gun = PolyComponent(
+            
+            origin = origin + Vec2d(156,-30),
+            center = Vec2d(47,4),
+            space = space,
+            img_path = "./assets/gun.png",
+            points = ((0,0),(13,2),(25,2),(33,3),(35,0),(45,0),(49,3),(90,4),(90,2),(94,4),(94,8),(0,8)),
+            filter = self.cf
+                                 )
         
+        attachment_point = self.gun.origin + Vec2d(-10,-5)
+
+
+        space.add(PivotJoint(self.turret.body, self.gun.body, self.turret.body.world_to_local(attachment_point), self.gun.body.world_to_local(attachment_point)))
     
+        self.gun_angle = RotaryLimitJoint(self.turret.body,self.gun.body,0,0.1)
+        space.add(self.gun_angle)
+
+
         self.wheels = self.create_wheels(space)
 
         self.rw = self.create_rear_wheels(space)
 
         for wheel in self.wheels:
             space.add(GearJoint(self.rw.body,wheel.body,0, 1))
+
+        self.ammo_coord = self.gun.center + Vec2d(43,0)
+
+        self.ammo, self.ammo_joint = self.generate_ammo(space)
+        
+        
+
+    def generate_ammo(self, space : Space)-> Tuple[Ammo, PivotJoint]:
+        bb = self.gun.shape.bb #imaginary box surrounding shape, for ease of getting coords
+        x = bb.right-5
+        y = bb.top - 15
+        ammo = Ammo((x,y),5, space)
+        ammo.shape.filter = self.cf
+
+        joint = (PivotJoint
+                  
+                  (self.gun.body,ammo.body, self.gun.body.world_to_local(ammo.body.position), ammo.body.world_to_local(ammo.body.position))
+                  )
+        
+        space.add(joint)
+
+        
+        return ammo, joint
 
     def create_wheels(self, space: Space) ->List[Wheel]:
         r = 9
@@ -182,9 +226,36 @@ class Tank:
     def move(self, direction: int)->None:
         self.rw.motor.rate += -1 * direction
 
-    
-        
+    def update_gun_angle(self, diff: float)->None:
+        if self.gun_angle.min < 0 and diff < 0:
+            return
+        if self.gun_angle.max > 1.12 and diff > 0:
+            return
 
+        self.gun_angle.min += diff
+        self.gun_angle.max += diff
+
+    def fire(self)->Ammo:
+        self.space.remove(self.ammo_joint)
+
+
+        max_force = 10**5
+
+        r = self.ammo.shape.radius
+
+        angle = self.gun.body.angle
+        impulse = Vec2d(max_force * cos(angle), max_force * sin(angle))
+
+        point = -1 * Vec2d(cos(angle)*r, sin(angle)*r)
+
+        self.ammo.body.apply_impulse_at_local_point(impulse, (-5,0))
+        
+        old_ammo = self.ammo
+        self.ammo, self.ammo_joint = self.generate_ammo(self.space)
+        return old_ammo
+
+    def ammo(self)-> None:
+        pass
 
 
     def render(self, display: Surface)->None:
@@ -195,7 +266,10 @@ class Tank:
 
         self.tb.render(display)
         self.rw.render(display)
+        self.gun.render(display)
         self.turret.render(display)
+        self.ammo.render(display)
+    
         
         
 

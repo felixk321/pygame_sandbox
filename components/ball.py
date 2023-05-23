@@ -11,7 +11,7 @@ class Ball:
         self.body = pymunk.Body()
         self.shape = pymunk.Circle(self.body, r)
         self.body.position = coord
-        self.body.velocity_func = self.limit_velocity
+        #self.body.velocity_func = self.limit_velocity
 
         self.radius = r
         self.lifetime = 255
