@@ -4,6 +4,7 @@ import pymunk
 from typing import Tuple, List, Type
 from random import randint
 from components.floor import Segment
+
 from utils import convert
 from components.catapult import Catapult
 from scenes.abstract import BaseScene
@@ -15,7 +16,7 @@ class Game:
     def __init__(self) -> None:
         self.scene = None
         pygame.init()
-        self.display = pygame.display.set_mode((500,500))
+        self.display = pygame.display.set_mode((1500,750))
         self.scene = None
         self.clock = pygame.time.Clock()
         
@@ -29,7 +30,7 @@ class Game:
             pk = pygame.key.get_pressed()
             self.scene.handle_pressed_keys(pk)
 
-            self.scene.update()
+            self.scene.update(self.display)
             
 
             self.scene.render(self.display)

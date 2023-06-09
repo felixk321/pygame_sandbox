@@ -1,9 +1,10 @@
 from pymunk import Vec2d,Body, Poly, Space, PivotJoint, ShapeFilter, SimpleMotor, GearJoint, PinJoint, RotaryLimitJoint
-from pygame import Surface, draw, image, transform
+from pygame import Surface, draw, image, transform, Vector2, mixer
 from utils import convert
 from components.ball import Ball
 from typing import List, Tuple
 from math import degrees, sin, cos
+
 
 class PolyComponent:
     def __init__(self, origin: Vec2d, center: Vec2d, space:Space, img_path: str, points: Tuple[Tuple[int,int]], filter: ShapeFilter)-> None:
@@ -26,7 +27,7 @@ class PolyComponent:
 
         self.image = image.load(img_path)
         
-    def render(self, display: Surface)->None:
+    def render(self, display: Surface, shift_x: float)->None:
         
 
         h = display.get_height()
@@ -40,8 +41,10 @@ class PolyComponent:
         ]
 
         rotate_image = transform.rotate(self.image, degrees(self.body.angle))
+        pos = convert(self.body.position,h) - Vector2(shift_x, 0)
 
-        dest = rotate_image.get_rect(center = convert(self.body.position,h))
+
+        dest = rotate_image.get_rect(center = pos)
 
         display.blit(rotate_image,dest)
 
@@ -51,10 +54,12 @@ class Wheel(Ball):
         super().__init__(*args, **kwargs)
         self.image = image.load("./assets/wheel.png", "png")
 
-    def render(self, display: Surface)->None:
+    def render(self, display: Surface, shift_x: float)->None:
         h = display.get_height()
         rotated_img = transform.rotate(self.image , degrees(self.body.angle))
-        dest = rotated_img.get_rect(center = convert(self.body.position, h))
+        pos = Vector2(convert(self.body.position, h)) - Vector2(shift_x,0)
+        dest = rotated_img.get_rect(center = pos)
+
         display.blit(rotated_img, dest)
         
 
@@ -73,10 +78,12 @@ class Ammo(Ball):
 
 class Tank: 
     def __init__(self, origin : Vec2d, space: Space) -> None:
+        self.fire_sound = mixer.Sound("assets/explosion_sound.flac")
         self.origin = origin
         self.cf = ShapeFilter(group = 1) #collision filter
         self.ammo_generated = False
         self.space = space
+        
 
 
         self.tb = PolyComponent(
@@ -236,6 +243,9 @@ class Tank:
         self.gun_angle.max += diff
 
     def fire(self)->Ammo:
+        self.fire_sound.play()
+        self.ammo.body.angle = 0
+
         self.space.remove(self.ammo_joint)
 
 
@@ -254,21 +264,21 @@ class Tank:
         self.ammo, self.ammo_joint = self.generate_ammo(self.space)
         return old_ammo
 
-    def ammo(self)-> None:
-        pass
+    
 
 
-    def render(self, display: Surface)->None:
+    def render(self, display: Surface, shift_x: float)->None:
         
 
         for wheel in self.wheels:
-            wheel.render(display)
+            wheel.render(display, shift_x)
 
-        self.tb.render(display)
-        self.rw.render(display)
-        self.gun.render(display)
-        self.turret.render(display)
-        self.ammo.render(display)
+        self.tb.render(display, shift_x)
+        self.rw.render(display, shift_x)
+        self.gun.render(display, shift_x)
+        self.turret.render(display, shift_x)
+        #self.ammo.render2(display, shift_x)
+        
     
         
         
